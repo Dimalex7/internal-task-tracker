@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    # mount the backend folder to sync code and persist the sqlite database
+    volumes:
+      - ./backend:/app
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    # ensure backend starts before frontend
+    depends_on:
+      - backend
+    # map frontend url to backend exposed port
+    environment:
+      - VITE_API_URL=http://localhost:8000
