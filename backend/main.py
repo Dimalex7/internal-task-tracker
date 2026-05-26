@@ -7,20 +7,21 @@ import models
 import schemas
 from database import SessionLocal, engine
 
-# create db tables on startup
+# init db tables on startup
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
+# allow vite frontend to communicate with this api
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"], #React localhost
+    allow_origins=["http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# dependency to get db session
+# db session helper
 def get_db():
     db = SessionLocal()
     try:
@@ -28,6 +29,7 @@ def get_db():
     finally:
         db.close()
 
+# create a new task
 @app.post("/tasks/", response_model=schemas.Task)
 def create_task(task: schemas.TaskCreate, db: Session = Depends(get_db)):
     db_task = models.Task(
@@ -40,11 +42,13 @@ def create_task(task: schemas.TaskCreate, db: Session = Depends(get_db)):
     db.refresh(db_task)
     return db_task
 
+# fetch all tasks
 @app.get("/tasks/", response_model=List[schemas.Task])
 def read_tasks(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     tasks = db.query(models.Task).offset(skip).limit(limit).all()
     return tasks
 
+# fetch a single task by id
 @app.get("/tasks/{task_id}", response_model=schemas.Task)
 def read_task(task_id: int, db: Session = Depends(get_db)):
     task = db.query(models.Task).filter(models.Task.id == task_id).first()
