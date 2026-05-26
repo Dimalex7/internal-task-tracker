@@ -3,12 +3,13 @@ import api from './api';
 import './App.css';
 
 function App() {
+  // component state
   const [tasks, setTasks] = useState([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [status, setStatus] = useState('Open');
+  const [status, setStatus] = useState('open');
 
-  // fetch tasks when the component mounts
+  // fetch tasks on initial load
   useEffect(() => {
     fetchTasks();
   }, []);
@@ -18,85 +19,93 @@ function App() {
       const response = await api.get('/tasks/');
       setTasks(response.data);
     } catch (error) {
-      console.error('Error fetching tasks:', error);
+      console.error('error fetching tasks:', error);
     }
   };
 
-  const handleSubmit = async (e) => {
+  // handle form submission
+  const createTask = async (e) => {
     e.preventDefault();
+    const newTask = { title, description, status };
     try {
-      await api.post('/tasks/', {
-        title,
-        description,
-        status,
-      });
-      // clear form and refresh list
+      await api.post('/tasks/', newTask);
+      // reset form fields
       setTitle('');
       setDescription('');
-      setStatus('Open');
+      setStatus('open');
       fetchTasks();
     } catch (error) {
-      console.error('Error creating task:', error);
+      console.error('error creating task:', error);
+    }
+  };
+
+  // helper for dynamic badge colors
+  const getStatusBadgeClass = (status) => {
+    switch (status) {
+      case 'open': return 'status-badge open';
+      case 'in progress': return 'status-badge progress';
+      case 'completed': return 'status-badge completed';
+      default: return 'status-badge';
     }
   };
 
   return (
-    <div className="container">
-      <h1>Internal Task Tracker</h1>
+    <div className="app-container">
+      <h1 className="main-header">Task tracker api</h1>
 
-      <div className="form-section">
-        <h2>Create a New Task</h2>
-        <form onSubmit={handleSubmit}>
+      {/* task creation form */}
+      <div className="task-form">
+        <h3 className="form-header">Create a new task</h3>
+        <form onSubmit={createTask}>
           <div className="form-group">
-            <label>Title *</label>
+            <label>title *</label>
             <input 
               type="text" 
+              placeholder="e.g. call client"
               value={title} 
               onChange={(e) => setTitle(e.target.value)} 
               required 
             />
           </div>
-          
           <div className="form-group">
-            <label>Description</label>
+            <label>description</label>
             <textarea 
+              placeholder="optional description"
               value={description} 
-              onChange={(e) => setDescription(e.target.value)} 
+              onChange={(e) => setDescription(e.target.value)}
             />
           </div>
-
           <div className="form-group">
-            <label>Status</label>
-            <select value={status} onChange={(e) => setStatus(e.target.value)}>
-              <option value="Open">Open</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Completed">Completed</option>
+            <label>status</label>
+            <select 
+              value={status} 
+              onChange={(e) => setStatus(e.target.value)}
+            >
+              <option value="open">open</option>
+              <option value="in progress">in progress</option>
+              <option value="completed">completed</option>
             </select>
           </div>
-
-          <button type="submit">Add Task</button>
+          <button className="submit-btn" type="submit">add task</button>
         </form>
       </div>
 
-      <div className="list-section">
-        <h2>Task List</h2>
-        {tasks.length === 0 ? (
-          <p>No tasks found.</p>
-        ) : (
-          <ul className="task-list">
-            {tasks.map((task) => (
-              <li key={task.id} className="task-item">
-                <div className="task-header">
-                  <h3>{task.title}</h3>
-                  <span className={`status badge-${task.status.replace(/\s+/g, '-').toLowerCase()}`}>
-                    {task.status}
-                  </span>
-                </div>
-                {task.description && <p className="task-desc">{task.description}</p>}
-              </li>
-            ))}
-          </ul>
-        )}
+      {/* task list display */}
+      <div className="task-list-section">
+        <h3>my tasks</h3>
+        <div className="task-list">
+          {tasks.map(task => (
+            <div key={task.id} className="task-item">
+              <div className="task-main-info">
+                <p className="task-title">{task.title}</p>
+                <span className={getStatusBadgeClass(task.status)}>
+                  {task.status}
+                </span>
+              </div>
+              <p className="task-description">{task.description}</p>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
